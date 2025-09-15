@@ -1,0 +1,20 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Logs
+logs/
+
+# Environment variables
+.env
+
+# PyCharm
+.idea/
+
+# Build / distribution
+dist/
+build/
+*.spec
