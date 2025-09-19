@@ -6,6 +6,7 @@ from PyQt6.QtCore import Qt, QThread, pyqtSignal
 import sys
 import config
 from db.connection import get_connection
+from werkzeug.security import check_password_hash
 
 class InitWindow(QMainWindow):
     def __init__(self):
@@ -77,15 +78,19 @@ class InitWindow(QMainWindow):
             else:
                 QMessageBox.warning(self, "Invalid User", f"User '{user_name}' not found in system.")
 
-
     def admin_login(self):
         password, ok = QInputDialog.getText(
             self,
             "ADMIN Login",
             "Enter password:",
-            QLineEdit.EchoMode.Password)
+            QLineEdit.EchoMode.Password
+        )
         if ok:
-            print(f"ADMIN login attempted with password: {password}")
+            if self.validate_admin(password):
+                print("✅ ADMIN logged in successfully")
+                # Here we will move to Job Management / Dashboard later
+            else:
+                QMessageBox.warning(self, "Invalid Password", "Incorrect admin password.")
 
     def validate_user(self, username):
         """
@@ -96,7 +101,7 @@ class InitWindow(QMainWindow):
 
         try:
             print("DEBUG: About to connect to DB...")
-            conn = get_connection(db_name="assetmanagerdb2")  # Asset Manager DB
+            conn = get_connection(db_name=config.DB_NAME_ASSETMANAGER)  # Asset Manager DB
             if conn is None:
                 print("DEBUG: get_connection returned None")
                 return False
@@ -113,6 +118,34 @@ class InitWindow(QMainWindow):
         except Exception as e:
             print(f"❌ Exception in validate_user: {e}")
             traceback.print_exc()
+            return False
+
+    def validate_admin(self, password):
+        """
+        Check if the entered password matches the hashed admin password in the DB.
+        Returns True if correct, False otherwise.
+        """
+        try:
+            conn = get_connection(db_name="assetmanagerdb2")
+            cursor = conn.cursor()
+
+            # Parameterized query to get admin hashed password
+            query = "SELECT password_hash FROM user WHERE username = %s LIMIT 1"
+            cursor.execute(query, ("admin",))
+
+            result = cursor.fetchone()
+            cursor.close()
+            conn.close()
+
+            if result is None:
+                return False
+
+            stored_password_hash = result[0]
+            # Use check_password_hash to compare plain password with hashed password
+            return check_password_hash(stored_password_hash, password)
+
+        except Exception as e:
+            print(f"Error validating admin: {e}")
             return False
 
 
