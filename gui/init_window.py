@@ -1,10 +1,11 @@
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget,
-    QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QInputDialog, QLineEdit
+    QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QInputDialog, QLineEdit, QMessageBox
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
 import sys
-
+import config
+from db.connection import get_connection
 
 class InitWindow(QMainWindow):
     def __init__(self):
@@ -69,7 +70,13 @@ class InitWindow(QMainWindow):
     def user_login(self):
         user_name, ok = QInputDialog.getText(self, "USER Login", "Enter your name:")
         if ok and user_name:
-            print(f"USER logged in: {user_name}")
+
+            if self.validate_user(user_name):
+                print(f"✅ USER logged in: {user_name}")
+                # Here we will move to Job Selection window later
+            else:
+                QMessageBox.warning(self, "Invalid User", f"User '{user_name}' not found in system.")
+
 
     def admin_login(self):
         password, ok = QInputDialog.getText(
@@ -79,6 +86,34 @@ class InitWindow(QMainWindow):
             QLineEdit.EchoMode.Password)
         if ok:
             print(f"ADMIN login attempted with password: {password}")
+
+    def validate_user(self, username):
+        """
+        Check if the username exists in Asset Manager DB.
+        Returns True if valid, False otherwise.
+        """
+        import traceback
+
+        try:
+            print("DEBUG: About to connect to DB...")
+            conn = get_connection(db_name="assetmanagerdb2")  # Asset Manager DB
+            if conn is None:
+                print("DEBUG: get_connection returned None")
+                return False
+
+            with conn.cursor() as cursor:
+                query = "SELECT username FROM user WHERE username = %s"
+                cursor.execute(query, (username,))
+                result = cursor.fetchone()
+
+            conn.close()
+            print(f"DEBUG: Query result = {result}")
+            return result is not None
+
+        except Exception as e:
+            print(f"❌ Exception in validate_user: {e}")
+            traceback.print_exc()
+            return False
 
 
 if __name__ == "__main__":
