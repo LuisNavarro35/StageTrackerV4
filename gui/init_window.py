@@ -7,6 +7,8 @@ import sys
 import config
 from db.connection import get_connection
 from werkzeug.security import check_password_hash
+from job_selection import JobSelectionWindow
+
 
 class InitWindow(QMainWindow):
     def __init__(self):
@@ -74,7 +76,10 @@ class InitWindow(QMainWindow):
 
             if self.validate_user(user_name):
                 print(f"✅ USER logged in: {user_name}")
-                # Here we will move to Job Selection window later
+                # Open Job Selection window
+                self.job_window = JobSelectionWindow(user_name=user_name, is_admin=False)
+                self.job_window.show()
+                self.close()  # close InitWindow
             else:
                 QMessageBox.warning(self, "Invalid User", f"User '{user_name}' not found in system.")
 
