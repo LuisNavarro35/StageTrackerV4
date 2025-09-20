@@ -3,8 +3,10 @@ from PyQt6.QtWidgets import (
     QInputDialog, QMessageBox, QListWidgetItem, QDialog, QComboBox
 )
 
+from PyQt6.QtCore import Qt
 import config
 from db.connection import get_connection
+from gui.counter_dashboard import CounterDashboardWindow
 
 class JobSelectionWindow(QMainWindow):
     def __init__(self, user_name, is_admin=False):
@@ -13,7 +15,7 @@ class JobSelectionWindow(QMainWindow):
         self.is_admin = is_admin
 
         self.setWindowTitle("Job Selection")
-        self.setFixedSize(800, 600)
+        self.setFixedSize(1000, 600)
 
         # Central widget
         central_widget = QWidget(self)
@@ -50,10 +52,10 @@ class JobSelectionWindow(QMainWindow):
             conn = get_connection(db_name=config.DB_NAME)
             with conn.cursor() as cursor:
                 query = """
-                    SELECT job_name, crew_cell, status
-                    FROM jobs
-                    WHERE status = 'active'
-                """
+                                SELECT id, job_name, crew_cell, status
+                                FROM jobs
+                                WHERE status = 'active'
+                            """
                 cursor.execute(query)
                 active_jobs = cursor.fetchall()
             conn.close()
@@ -64,16 +66,22 @@ class JobSelectionWindow(QMainWindow):
 
         self.jobs_list.clear()
         for job in active_jobs:
-            job_name, crew_cell, status = job
+            id, job_name, crew_cell, status = job
             item_text = f"{job_name} | {crew_cell} | {status}"
-            self.jobs_list.addItem(QListWidgetItem(item_text))
+            item = QListWidgetItem(item_text)
+            item.setData(Qt.ItemDataRole.UserRole, id)  # Store job_id
+            self.jobs_list.addItem(item)
 
     def select_job(self):
         """Handle job selection."""
         selected_items = self.jobs_list.selectedItems()
         if selected_items:
-            job = selected_items[0].text()
-            print(f"✅ Job selected: {job}")
+            item = selected_items[0]
+            job_id = item.data(Qt.ItemDataRole.UserRole)
+            print(f"✅ Job id selected: {job_id}")
+            self.job_counter_dashboard = CounterDashboardWindow(job_id=job_id)
+            self.job_counter_dashboard.show()
+            self.close()
         else:
             QMessageBox.warning(self, "No Selection", "Please select a job first.")
 
