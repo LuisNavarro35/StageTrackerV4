@@ -145,7 +145,7 @@ class InitWindow(QMainWindow):
             if result is None:
                 return False
 
-            stored_password_hash = result[0]
+            stored_password_hash = result["password_hash"]
             # Use check_password_hash to compare plain password with hashed password
             return check_password_hash(stored_password_hash, password)
 

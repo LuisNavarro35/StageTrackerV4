@@ -16,7 +16,7 @@ def get_connection(db_name):
             password=config.DB_PASSWORD,
             database=db_name,
             charset="utf8mb4",
-            cursorclass=pymysql.cursors.Cursor,
+            cursorclass=pymysql.cursors.DictCursor,
             connect_timeout=10
         )
         # Successful connection — return the connection object

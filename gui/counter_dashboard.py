@@ -5,10 +5,19 @@ from PyQt6.QtWidgets import (
 
 )
 
+import config
+from db.connection import get_connection
+from utils.log_entry import add_log_entry_db
+from datetime import datetime
+import pytz
+
+log_events_types= ["Login", "AddStage", "MinusStage", "Rehead", "Edit", "Database", "Error"] # Predefined event types for logging
+
 class CounterDashboardWindow(QMainWindow):
-    def __init__(self, job_id):
+    def __init__(self, job_id, user_name="USER"):
         super().__init__()
         self.job_id = job_id
+        self.user_name = user_name
         self.job_name = "JOB NAME"  # Placeholder
         self.crew_cell = "CREW CELL"  # Placeholder
 
@@ -20,8 +29,8 @@ class CounterDashboardWindow(QMainWindow):
         main_layout = QVBoxLayout(central_widget)
 
         # Section0: Info
-        info_label = QLabel(f"Stage Tracker | Job: {self.job_name} | Crew: {self.crew_cell}")
-        main_layout.addWidget(info_label)
+        self.info_label = QLabel(f"Stage Tracker | Job: {self.job_name} | Crew: {self.crew_cell}")
+        main_layout.addWidget(self.info_label)
 
 
         # Section1: Edit counters checkbox
@@ -180,8 +189,11 @@ class CounterDashboardWindow(QMainWindow):
         self.minus_stage_btn.clicked.connect(self.decrease_stage)
         self.rehead_btn.clicked.connect(self.rehead_roh)
 
+        #Initialize Counter_dashboard state
+        self.download_counters()  # Load counters from DB
         self.toggle_all_counters(state=0)  # Disable all counters initially
-        self.add_log_entry(message="Counter Dashboard initialized.")
+        self.download_logs()
+        self.update_logs(event_type="Login", message=f"User '{self.user_name}' logged in.")
 
     def toggle_all_counters(self, state):
         enabled = state == 2
@@ -205,6 +217,8 @@ class CounterDashboardWindow(QMainWindow):
         self.asset6_serial_entry.setEnabled(enabled)
 
         self.update_remain()
+        self.update_logs(event_type="Edit", message="Counter Values Edited Manually.")
+        self.update_counters()
 
 
     def increase_stage(self):
@@ -232,6 +246,10 @@ class CounterDashboardWindow(QMainWindow):
             self.asset6_spinbox.setValue(self.asset6_spinbox.value() + 1)
 
         self.update_remain()
+        self.update_logs(event_type="AddStage", message="Counters increased +1 Stage.")
+        self.update_counters()
+
+
 
     def decrease_stage(self):
         if self.roh_enable_checkbox.isChecked() and self.roh_spinbox.value() > 0:
@@ -258,14 +276,198 @@ class CounterDashboardWindow(QMainWindow):
             self.asset6_spinbox.setValue(self.asset6_spinbox.value() - 1)
 
         self.update_remain()
+        self.update_logs(event_type="MinusStage", message="Counters decreased -1 Stage.")
+        self.update_counters()
+
 
 
     def rehead_roh(self):
         self.roh_spinbox.setValue(0)
+        self.update_logs(event_type="Rehead", message="ROH counter reheaded to 0.")
+        self.update_counters()
 
     def update_remain(self):
         remain_value = self.total_spinbox.value() - self.shot_spinbox.value()
         self.remain_spinbox.setValue(remain_value)
 
-    def add_log_entry(self, message):
-        self.log_window.append(message)
+    def download_counters(self):
+        try:
+            conn = get_connection(db_name=config.DB_NAME)
+            with conn.cursor() as cursor:
+                # Get job_name and crew_cell by key
+                cursor.execute("SELECT job_name, crew_cell FROM jobs WHERE id = %s", (self.job_id,))
+                job_row = cursor.fetchone()
+                if job_row:
+                    self.job_name = job_row['job_name'] if job_row['job_name'] is not None else "JOB NAME"
+                    self.crew_cell = job_row['crew_cell'] if job_row['crew_cell'] is not None else "CREW CELL"
+                    self.info_label.setText(f"Stage Tracker | Job: {self.job_name} | Crew: {self.crew_cell}")
+                else:
+                    self.job_name = "JOB NAME"
+                    self.crew_cell = "CREW CELL"
+
+                # Get counters row by key
+                cursor.execute(
+                    "SELECT roh, top_rubber, middle_rubber, low_rubber, shot, remain, total, asset_1, asset_1_name, asset_2, asset_2_name, asset_3, asset_3_name, asset_4, asset_4_name, asset_5, asset_5_name, asset_6, asset_6_name FROM counters WHERE job_id = %s",
+                    (self.job_id,))
+                row = cursor.fetchone()
+            conn.close()
+
+            if row:
+                self.roh_spinbox.setValue(row['roh'])
+                self.top_rubber_spinbox.setValue(row['top_rubber'])
+                self.middle_rubber_spinbox.setValue(row['middle_rubber'])
+                self.low_rubber_spinbox.setValue(row['low_rubber'])
+                self.shot_spinbox.setValue(row['shot'])
+                self.remain_spinbox.setValue(row['remain'])
+                self.total_spinbox.setValue(row['total'])
+
+                self.asset1_spinbox.setValue(row['asset_1'])
+                self.asset1_serial_entry.setText(row['asset_1_name'])
+                self.asset2_spinbox.setValue(row['asset_2'])
+                self.asset2_serial_entry.setText(row['asset_2_name'])
+                self.asset3_spinbox.setValue(row['asset_3'])
+                self.asset3_serial_entry.setText(row['asset_3_name'])
+                self.asset4_spinbox.setValue(row['asset_4'])
+                self.asset4_serial_entry.setText(row['asset_4_name'])
+                self.asset5_spinbox.setValue(row['asset_5'])
+                self.asset5_serial_entry.setText(row['asset_5_name'])
+                self.asset6_spinbox.setValue(row['asset_6'])
+                self.asset6_serial_entry.setText(row['asset_6_name'])
+
+                self.update_logs(event_type="Database", message="Counter values loaded from database.")
+            else:
+                self.update_logs(event_type="Database", message="No counter values found for this job in database.")
+
+        except Exception as e:
+            self.update_logs(event_type="Error", message=f"Error loading counters from database: {e}")
+
+    def update_counters(self):
+        try:
+            conn = get_connection(db_name=config.DB_NAME)
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    UPDATE counters SET
+                        roh = %s,
+                        top_rubber = %s,
+                        middle_rubber = %s,
+                        low_rubber = %s,
+                        shot = %s,
+                        remain = %s,
+                        total = %s,
+                        asset_1 = %s,
+                        asset_1_name = %s,
+                        asset_2 = %s,
+                        asset_2_name = %s,
+                        asset_3 = %s,
+                        asset_3_name = %s,
+                        asset_4 = %s,
+                        asset_4_name = %s,
+                        asset_5 = %s,
+                        asset_5_name = %s,
+                        asset_6 = %s,
+                        asset_6_name = %s
+                    WHERE job_id = %s
+                    """,
+                    (
+                        self.roh_spinbox.value(),
+                        self.top_rubber_spinbox.value(),
+                        self.middle_rubber_spinbox.value(),
+                        self.low_rubber_spinbox.value(),
+                        self.shot_spinbox.value(),
+                        self.remain_spinbox.value(),
+                        self.total_spinbox.value(),
+                        self.asset1_spinbox.value(),
+                        self.asset1_serial_entry.text(),
+                        self.asset2_spinbox.value(),
+                        self.asset2_serial_entry.text(),
+                        self.asset3_spinbox.value(),
+                        self.asset3_serial_entry.text(),
+                        self.asset4_spinbox.value(),
+                        self.asset4_serial_entry.text(),
+                        self.asset5_spinbox.value(),
+                        self.asset5_serial_entry.text(),
+                        self.asset6_spinbox.value(),
+                        self.asset6_serial_entry.text(),
+                        self.job_id
+                    )
+                )
+                conn.commit()
+            conn.close()
+            self.update_logs(event_type="Database", message="Counter values updated in database.")
+        except Exception as e:
+            self.update_logs(event_type="Database", message=f"Error updating counters in database: {e}")
+
+    def get_widget_values(self):
+        return {
+            "roh": self.roh_spinbox.value(),
+            "top_rubber": self.top_rubber_spinbox.value(),
+            "middle_rubber": self.middle_rubber_spinbox.value(),
+            "low_rubber": self.low_rubber_spinbox.value(),
+            "shot": self.shot_spinbox.value(),
+            "remain": self.remain_spinbox.value(),
+            "total": self.total_spinbox.value(),
+            "asset_1": self.asset1_spinbox.value(),
+            "asset_1_name": self.asset1_serial_entry.text(),
+            "asset_2": self.asset2_spinbox.value(),
+            "asset_2_name": self.asset2_serial_entry.text(),
+            "asset_3": self.asset3_spinbox.value(),
+            "asset_3_name": self.asset3_serial_entry.text(),
+            "asset_4": self.asset4_spinbox.value(),
+            "asset_4_name": self.asset4_serial_entry.text(),
+            "asset_5": self.asset5_spinbox.value(),
+            "asset_5_name": self.asset5_serial_entry.text(),
+            "asset_6": self.asset6_spinbox.value(),
+            "asset_6_name": self.asset6_serial_entry.text()
+        }
+
+    def download_logs(self):
+        try:
+            conn = get_connection(db_name=config.DB_NAME)
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "SELECT timestamp, user_name, event_type, message FROM logs WHERE job_id = %s ORDER BY id ASC LIMIT 100",
+                    (self.job_id,)
+                )
+                logs = cursor.fetchall()
+            conn.close()
+            self.log_window.clear()
+            for log in logs:
+                # Convert UTC timestamp to America/Chicago
+                utc = pytz.utc
+                chicago = pytz.timezone("America/Chicago")
+                utc_dt = utc.localize(datetime.strptime(str(log['timestamp']), "%Y-%m-%d %H:%M:%S"))
+                local_dt = utc_dt.astimezone(chicago)
+                local_timestamp = local_dt.strftime("%Y-%m-%d %H:%M:%S")
+                entry = (
+                    f"[{local_timestamp}] "
+                    f"[{log['event_type']}] | "
+                    f"user_name: {log['user_name']} | "
+                    f"message: {log['message']}"
+                )
+                self.log_window.append(entry)
+        except Exception as e:
+            self.log_window.append(f"Error loading logs: {e}")
+
+    def update_logs(self, event_type, message):
+        log_job_id = self.job_id
+        log_user_name = self.user_name
+        log_event_type = event_type
+        log_new_value = self.get_widget_values()
+        log_message = message
+        add_log_entry_db(job_id=log_job_id, user_name=log_user_name, event_type=event_type,
+                         new_value=log_new_value, message=message)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        entry= (
+            f"[{timestamp}] "
+            f"[{log_event_type}] "
+            f"user_name: {log_user_name} | "
+            f"event_type: {log_event_type} | "
+            #f"new_value: {log_new_value} | "
+            f"message: {log_message}"
+        )
+        self.log_window.append(entry)
+
+
+
+

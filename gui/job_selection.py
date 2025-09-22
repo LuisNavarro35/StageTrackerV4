@@ -52,10 +52,10 @@ class JobSelectionWindow(QMainWindow):
             conn = get_connection(db_name=config.DB_NAME)
             with conn.cursor() as cursor:
                 query = """
-                                SELECT id, job_name, crew_cell, status
-                                FROM jobs
-                                WHERE status = 'active'
-                            """
+                    SELECT id, job_name, crew_cell, status
+                    FROM jobs
+                    WHERE status = 'active'
+                """
                 cursor.execute(query)
                 active_jobs = cursor.fetchall()
             conn.close()
@@ -66,7 +66,10 @@ class JobSelectionWindow(QMainWindow):
 
         self.jobs_list.clear()
         for job in active_jobs:
-            id, job_name, crew_cell, status = job
+            id = job['id']
+            job_name = job['job_name']
+            crew_cell = job['crew_cell']
+            status = job['status']
             item_text = f"{job_name} | {crew_cell} | {status}"
             item = QListWidgetItem(item_text)
             item.setData(Qt.ItemDataRole.UserRole, id)  # Store job_id
@@ -79,7 +82,7 @@ class JobSelectionWindow(QMainWindow):
             item = selected_items[0]
             job_id = item.data(Qt.ItemDataRole.UserRole)
             print(f"✅ Job id selected: {job_id}")
-            self.job_counter_dashboard = CounterDashboardWindow(job_id=job_id)
+            self.job_counter_dashboard = CounterDashboardWindow(job_id=job_id, user_name=self.user_name)
             self.job_counter_dashboard.show()
             self.close()
         else:
@@ -92,7 +95,7 @@ class JobSelectionWindow(QMainWindow):
             conn = get_connection(db_name=config.DB_NAME)
             with conn.cursor() as cursor:
                 cursor.execute("SELECT crew_name FROM cells")
-                crew_cells = [row[0] for row in cursor.fetchall()]
+                crew_cells = [row['crew_name'] for row in cursor.fetchall()]
             conn.close()
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Could not load crew cells: {e}")
@@ -122,23 +125,42 @@ class JobSelectionWindow(QMainWindow):
 
         def on_create():
             crew_cell = crew_combo.currentText()
-            # Check for active job
             try:
                 conn = get_connection(db_name=config.DB_NAME)
                 with conn.cursor() as cursor:
                     cursor.execute(
-                        "SELECT COUNT(*) FROM jobs WHERE crew_cell=%s AND status='active'",
+                        "SELECT 1 FROM jobs WHERE crew_cell=%s AND status='active' LIMIT 1",
                         (crew_cell,)
                     )
-                    exists = cursor.fetchone()[0]
+                    exists = cursor.fetchone() is not None
                     if exists:
                         QMessageBox.warning(self, "Warning", f"Crew '{crew_cell}' already has an active job.")
                         dialog.reject()
                         return
+
+                    # Insert new job
                     cursor.execute(
                         "INSERT INTO jobs (job_name, crew_cell, status, started_at) VALUES (%s, %s, 'active', NOW())",
                         (job_name, crew_cell)
                     )
+                    job_id = cursor.lastrowid
+
+                    # Initialize counters for the new job
+                    cursor.execute(
+                        """
+                        INSERT INTO counters (
+                            job_id, roh, top_rubber, middle_rubber, low_rubber, shot, remain, total,
+                            asset_1, asset_1_name, asset_2, asset_2_name, asset_3, asset_3_name,
+                            asset_4, asset_4_name, asset_5, asset_5_name, asset_6, asset_6_name
+                        ) VALUES (
+                            %s, 0, 0, 0, 0, 0, 0, 0,
+                            0, 'Asset 1', 0, 'Asset 2', 0, 'Asset 3',
+                            0, 'Asset 4', 0, 'Asset 5', 0, 'Asset 6'
+                        )
+                        """,
+                        (job_id,)
+                    )
+
                     conn.commit()
                 conn.close()
                 QMessageBox.information(self, "Job Created", f"New job '{job_name}' for '{crew_cell}' created!")
