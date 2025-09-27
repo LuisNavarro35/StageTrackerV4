@@ -191,8 +191,8 @@ class CounterDashboardWindow(QMainWindow):
 
         #Initialize Counter_dashboard state
         self.download_counters()  # Load counters from DB
-        self.toggle_all_counters(state=0)  # Disable all counters initially
-        self.download_logs()
+        self.init_disable_all_counters()  # Disable all counters initially
+        #self.download_logs()
         self.update_logs(event_type="Login", message=f"User '{self.user_name}' logged in.")
 
     def toggle_all_counters(self, state):
@@ -217,9 +217,9 @@ class CounterDashboardWindow(QMainWindow):
         self.asset6_serial_entry.setEnabled(enabled)
 
         self.update_remain()
-        self.update_logs(event_type="Edit", message="Counter Values Edited Manually.")
-        self.update_counters()
-
+        if state == 0:
+            self.update_logs(event_type="Edit", message="Counter Values Edited Manually.")
+            self.update_counters()
 
     def increase_stage(self):
         if self.roh_enable_checkbox.isChecked():
@@ -249,8 +249,6 @@ class CounterDashboardWindow(QMainWindow):
         self.update_logs(event_type="AddStage", message="Counters increased +1 Stage.")
         self.update_counters()
 
-
-
     def decrease_stage(self):
         if self.roh_enable_checkbox.isChecked() and self.roh_spinbox.value() > 0:
             self.roh_spinbox.setValue(self.roh_spinbox.value() - 1)
@@ -278,8 +276,6 @@ class CounterDashboardWindow(QMainWindow):
         self.update_remain()
         self.update_logs(event_type="MinusStage", message="Counters decreased -1 Stage.")
         self.update_counters()
-
-
 
     def rehead_roh(self):
         self.roh_spinbox.setValue(0)
@@ -426,7 +422,16 @@ class CounterDashboardWindow(QMainWindow):
             conn = get_connection(db_name=config.DB_NAME)
             with conn.cursor() as cursor:
                 cursor.execute(
-                    "SELECT timestamp, user_name, event_type, message FROM logs WHERE job_id = %s ORDER BY id ASC LIMIT 100",
+                    """
+                    SELECT * FROM (
+                        SELECT id, timestamp, user_name, event_type, message
+                        FROM logs
+                        WHERE job_id = %s
+                        ORDER BY id DESC
+                        LIMIT 20
+                    ) AS sub
+                    ORDER BY id ASC
+                    """,
                     (self.job_id,)
                 )
                 logs = cursor.fetchall()
@@ -455,8 +460,9 @@ class CounterDashboardWindow(QMainWindow):
         log_event_type = event_type
         log_new_value = self.get_widget_values()
         log_message = message
-        add_log_entry_db(job_id=log_job_id, user_name=log_user_name, event_type=event_type,
-                         new_value=log_new_value, message=message)
+        add_log_entry_db(job_id=log_job_id, user_name=log_user_name, event_type=log_event_type,
+                         new_value=log_new_value, message=log_message)
+        # Also update the log window in the GUI
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         entry= (
             f"[{timestamp}] "
@@ -467,6 +473,26 @@ class CounterDashboardWindow(QMainWindow):
             f"message: {log_message}"
         )
         self.log_window.append(entry)
+
+    def init_disable_all_counters(self):
+        self.roh_spinbox.setEnabled(False)
+        self.top_rubber_spinbox.setEnabled(False)
+        self.middle_rubber_spinbox.setEnabled(False)
+        self.low_rubber_spinbox.setEnabled(False)
+        self.shot_spinbox.setEnabled(False)
+        self.total_spinbox.setEnabled(False)  # Total is editable only if checkbox is checked
+        self.asset1_spinbox.setEnabled(False)
+        self.asset2_spinbox.setEnabled(False)
+        self.asset3_spinbox.setEnabled(False)
+        self.asset4_spinbox.setEnabled(False)
+        self.asset5_spinbox.setEnabled(False)
+        self.asset6_spinbox.setEnabled(False)
+        self.asset1_serial_entry.setEnabled(False)
+        self.asset2_serial_entry.setEnabled(False)
+        self.asset3_serial_entry.setEnabled(False)
+        self.asset4_serial_entry.setEnabled(False)
+        self.asset5_serial_entry.setEnabled(False)
+        self.asset6_serial_entry.setEnabled(False)
 
 
 

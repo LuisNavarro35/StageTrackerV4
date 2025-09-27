@@ -6,6 +6,7 @@ def add_log_entry_db(job_id, user_name, event_type, new_value, message):
     try:
         conn = get_connection(db_name=config.DB_NAME)
         with conn.cursor() as cursor:
+
             cursor.execute(
                 """
                 INSERT INTO logs (job_id, user_name, event_type, new_value, message)
