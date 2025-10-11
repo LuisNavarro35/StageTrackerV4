@@ -52,7 +52,7 @@ class JobSelectionWindow(QMainWindow):
             conn = get_connection(db_name=config.DB_NAME)
             with conn.cursor() as cursor:
                 query = """
-                    SELECT id, job_name, crew_cell, status
+                    SELECT id, job_name, crew_cell, status, session_user
                     FROM jobs
                     WHERE status = 'active'
                 """
@@ -70,7 +70,8 @@ class JobSelectionWindow(QMainWindow):
             job_name = job['job_name']
             crew_cell = job['crew_cell']
             status = job['status']
-            item_text = f"{job_name} | {crew_cell} | {status}"
+            session_user = job['session_user'] if 'session_user' in job else None
+            item_text = f"Job_name: {job_name} | Crew_cell: {crew_cell} | Job_status: {status} | active_session: {session_user}"
             item = QListWidgetItem(item_text)
             item.setData(Qt.ItemDataRole.UserRole, id)  # Store job_id
             self.jobs_list.addItem(item)
@@ -78,16 +79,74 @@ class JobSelectionWindow(QMainWindow):
     def select_job(self):
         """Handle job selection."""
         selected_items = self.jobs_list.selectedItems()
-        if selected_items:
-            item = selected_items[0]
-            job_id = item.data(Qt.ItemDataRole.UserRole)
-            print(f"✅ Job id selected: {job_id}")
-            self.job_counter_dashboard = CounterDashboardWindow(job_id=job_id, user_name=self.user_name)
-            self.job_counter_dashboard.show()
-            self.close()
-        else:
+        if not selected_items:
             QMessageBox.warning(self, "No Selection", "Please select a job first.")
+            return
 
+        item = selected_items[0]
+        job_id = item.data(Qt.ItemDataRole.UserRole)
+
+        try:
+            conn = get_connection(db_name=config.DB_NAME)
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT session_user FROM jobs WHERE id=%s", (job_id,))
+                row = cursor.fetchone()
+            conn.close()
+
+            if not row:
+                QMessageBox.warning(self, "Error", "Selected job not found in database.")
+                return
+
+            current_session_user = row["session_user"]
+
+            # If no session_user, assign it to this user
+            if not current_session_user:
+                self.assign_session_user(job_id)
+                self.launch_dashboard(job_id)
+
+            # If same user — allow entry
+            elif current_session_user == self.user_name:
+                self.launch_dashboard(job_id)
+
+            # If different user — confirm override
+            else:
+                reply = QMessageBox.question(
+                    self,
+                    "Job In Use",
+                    f"This job is currently controlled by '{current_session_user}'.\n"
+                    f"Do you want to take over (this will disconnect them)?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                )
+                if reply == QMessageBox.StandardButton.Yes:
+                    self.assign_session_user(job_id)
+                    self.launch_dashboard(job_id)
+                else:
+                    return
+
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Could not check job session: {e}")
+            return
+
+    def assign_session_user(self, job_id):
+        """Assign this user as the current session user."""
+        try:
+            conn = get_connection(db_name=config.DB_NAME)
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE jobs SET session_user=%s WHERE id=%s",
+                    (self.user_name, job_id)
+                )
+                conn.commit()
+            conn.close()
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Failed to update session user: {e}")
+
+    def launch_dashboard(self, job_id):
+        """Open the dashboard window."""
+        print(f"✅ Job id selected: {job_id} by {self.user_name}")
+        self.job_counter_dashboard = CounterDashboardWindow(job_id=job_id, user_name=self.user_name)
+        self.job_counter_dashboard.show()
+        self.close()
 
     def create_new_job(self):
         """Handle creation of a new job with crew cell selection."""
@@ -140,9 +199,13 @@ class JobSelectionWindow(QMainWindow):
 
                     # Insert new job
                     cursor.execute(
-                        "INSERT INTO jobs (job_name, crew_cell, status, started_at) VALUES (%s, %s, 'active', NOW())",
-                        (job_name, crew_cell)
+                        """
+                        INSERT INTO jobs (job_name, crew_cell, status, started_at, session_user)
+                        VALUES (%s, %s, 'active', NOW(), %s)
+                        """,
+                        (job_name, crew_cell, self.user_name)
                     )
+
                     job_id = cursor.lastrowid
 
                     # Initialize counters for the new job
