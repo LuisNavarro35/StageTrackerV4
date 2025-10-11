@@ -1,13 +1,14 @@
 # gui/counter_dashboard.py
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel,
-    QSpinBox, QCheckBox, QPushButton, QTextEdit, QLineEdit
+    QSpinBox, QCheckBox, QPushButton, QTextEdit, QLineEdit, QMessageBox
 
 )
 
 import config
 from db.connection import get_connection
 from utils.log_entry import add_log_entry_db
+
 from datetime import datetime
 import pytz
 
@@ -188,6 +189,7 @@ class CounterDashboardWindow(QMainWindow):
         self.plus_stage_btn.clicked.connect(self.increase_stage)
         self.minus_stage_btn.clicked.connect(self.decrease_stage)
         self.rehead_btn.clicked.connect(self.rehead_roh)
+        self.finish_job_btn.clicked.connect(self.finish_job)
 
         #Initialize Counter_dashboard state
         self.download_counters()  # Load counters from DB
@@ -493,6 +495,35 @@ class CounterDashboardWindow(QMainWindow):
         self.asset4_serial_entry.setEnabled(False)
         self.asset5_serial_entry.setEnabled(False)
         self.asset6_serial_entry.setEnabled(False)
+
+    def finish_job(self):
+        reply = QMessageBox.question(
+            self,
+            "Finish Job",
+            f"Finish the Job: {self.job_name}?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                conn = get_connection(db_name=config.DB_NAME)
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        "UPDATE jobs SET status = %s, finished_at = %s WHERE id = %s",
+                        ("finished", datetime.now(), self.job_id)
+                    )
+                    conn.commit()
+                conn.close()
+
+                self.update_logs(event_type="Database", message=f"Job '{self.job_name}' marked as finished.")
+
+                from gui.init_window import InitWindow  # Import here to avoid circular import
+                self.init_win = InitWindow()
+                self.init_win.show()
+                self.close()  # Close the dashboard
+
+            except Exception as e:
+                self.update_logs(event_type="Error", message=f"Error finishing job: {e}")
+
 
 
 

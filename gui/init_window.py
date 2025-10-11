@@ -7,7 +7,7 @@ import sys
 import config
 from db.connection import get_connection
 from werkzeug.security import check_password_hash
-from job_selection import JobSelectionWindow
+from gui.job_selection import JobSelectionWindow
 
 
 class InitWindow(QMainWindow):
