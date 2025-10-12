@@ -138,7 +138,7 @@ class JobSelectionWindow(QMainWindow):
             conn = get_connection(db_name=config.DB_NAME)
             with conn.cursor() as cursor:
                 cursor.execute(
-                    "UPDATE jobs SET session_user=%s WHERE id=%s",
+                    "UPDATE jobs SET session_user=%s, session_updated_at=NOW() WHERE id=%s",
                     (self.user_name, job_id)
                 )
                 conn.commit()

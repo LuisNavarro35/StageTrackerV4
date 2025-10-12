@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (
     QSpinBox, QCheckBox, QPushButton, QTextEdit, QLineEdit, QMessageBox
 
 )
+from PyQt6.QtCore import QTimer
 
 import config
 from db.connection import get_connection
@@ -21,6 +22,11 @@ class CounterDashboardWindow(QMainWindow):
         self.user_name = user_name
         self.job_name = "JOB NAME"  # Placeholder
         self.crew_cell = "CREW CELL"  # Placeholder
+
+        # Start periodic session validation
+        self.session_check_timer = QTimer(self)
+        self.session_check_timer.timeout.connect(self.check_session_validity)
+        self.session_check_timer.start(60000)  # every 60 seconds
 
         self.setWindowTitle("Counter Dashboard")
         self.setFixedSize(1000, 600)
@@ -524,6 +530,39 @@ class CounterDashboardWindow(QMainWindow):
             except Exception as e:
                 self.update_logs(event_type="Error", message=f"Error finishing job: {e}")
 
+    def check_session_validity(self):
+        """Periodically check if current session user still matches this user."""
+        try:
+            conn = get_connection(db_name=config.DB_NAME)
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "SELECT session_user FROM jobs WHERE id = %s", (self.job_id,)
+                )
+                result = cursor.fetchone()
+            conn.close()
+
+            if result and result['session_user'] != self.user_name:
+                # Stop timer immediately
+                self.session_check_timer.stop()
+
+                self.update_logs(event_type="Session",
+                                 message=f"Session taken over by '{result['session_user']}'. Logging out '{self.user_name}'.")
+
+                # Notify user
+                QMessageBox.warning(
+                    self,
+                    "Session Taken",
+                    f"Session has been taken by user '{result['session_user']}'.\nYou will be logged out.",
+                )
+
+                # Close this dashboard and return to job selection
+                from gui.job_selection import JobSelectionWindow
+                self.job_selection_window = JobSelectionWindow(user_name=self.user_name)
+                self.job_selection_window.show()
+                self.close()
+
+        except Exception as e:
+            print("Error checking session validity:", e)
 
 
 
