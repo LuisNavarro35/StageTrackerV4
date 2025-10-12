@@ -7,6 +7,7 @@ from PyQt6.QtCore import Qt
 import config
 from db.connection import get_connection
 from gui.counter_dashboard import CounterDashboardWindow
+from utils.log_entry import add_log_entry_db
 
 class JobSelectionWindow(QMainWindow):
     def __init__(self, user_name, is_admin=False):
@@ -106,6 +107,8 @@ class JobSelectionWindow(QMainWindow):
 
             # If same user — allow entry
             elif current_session_user == self.user_name:
+                add_log_entry_db(job_id=job_id, user_name=self.user_name, event_type="Session",
+                                 new_value=None, message=f"Session user Allowed to: {self.user_name}")
                 self.launch_dashboard(job_id)
 
             # If different user — confirm override
@@ -118,6 +121,8 @@ class JobSelectionWindow(QMainWindow):
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
                 )
                 if reply == QMessageBox.StandardButton.Yes:
+                    add_log_entry_db(job_id=job_id, user_name=self.user_name, event_type="Session",
+                                     new_value=None, message=f"Force Session Selected: {self.user_name}")
                     self.assign_session_user(job_id)
                     self.launch_dashboard(job_id)
                 else:
@@ -138,6 +143,8 @@ class JobSelectionWindow(QMainWindow):
                 )
                 conn.commit()
             conn.close()
+            add_log_entry_db(job_id=job_id, user_name=self.user_name, event_type="Session",
+                             new_value=None, message=f"Session user set to {self.user_name}")
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Failed to update session user: {e}")
 
