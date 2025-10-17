@@ -1,14 +1,14 @@
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget,
-    QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QInputDialog, QLineEdit, QMessageBox
+    QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QInputDialog, QLineEdit, QMessageBox, QFrame
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QFont, QPixmap
 import sys
 import config
 from db.connection import get_connection
 from werkzeug.security import check_password_hash
 from gui.job_selection import JobSelectionWindow
-
 
 class InitWindow(QMainWindow):
     def __init__(self):
@@ -20,58 +20,66 @@ class InitWindow(QMainWindow):
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
 
-        # Main vertical layout
+        # Main layout setup
         main_layout = QVBoxLayout(central_widget)
+        main_layout.setContentsMargins(40, 30, 40, 20)
+        main_layout.setSpacing(8)
 
-        # --- TOP section (labels) ---
+        # --- TOP ---
         top_layout = QVBoxLayout()
-        self.title_label = QLabel("Welcome Horizontal Stage Tracker")
-        self.title_label.setStyleSheet("font-size: 20px; font-weight: bold;")
+        self.title_label = QLabel("Welcome to Wireline Stage Tracker")
+        self.title_label.setObjectName("title")
+        self.title_label.setFont(QFont("Segoe UI", 24))
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
         self.version_label = QLabel("Version 4.0")
-        self.version_label.setStyleSheet("font-size: 14px; color: gray;")
+        self.version_label.setObjectName("version")
         self.version_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
         top_layout.addWidget(self.title_label)
         top_layout.addWidget(self.version_label)
 
-        # --- MIDDLE section (buttons) ---
+        # --- MIDDLE ---
         middle_layout = QVBoxLayout()
-
-        button_style = "font-size: 16px; padding: 10px 20px;"
-        button_width = 200  # pixels
+        middle_layout.setSpacing(18)
 
         self.user_button = QPushButton("USER")
-        self.user_button.setFixedWidth(button_width)
-        self.user_button.setStyleSheet(button_style)
-        self.user_button.clicked.connect(self.user_login)
-
         self.admin_button = QPushButton("ADMIN")
-        self.admin_button.setFixedWidth(button_width)
-        self.admin_button.setStyleSheet(button_style)
+
+        self.user_button.clicked.connect(self.user_login)
         self.admin_button.clicked.connect(self.admin_login)
 
         middle_layout.addWidget(self.user_button, alignment=Qt.AlignmentFlag.AlignHCenter)
-        middle_layout.addSpacing(20)  # space between buttons
         middle_layout.addWidget(self.admin_button, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-        # --- FOOTER section (copyright) ---
-        footer_layout = QHBoxLayout()
-        self.copyright_label = QLabel("Copyright © 2025 by Dev. Luis Navarro")
-        self.copyright_label.setStyleSheet("font-size: 14px; color: gray;")
-        footer_layout.addStretch()  # push to the right
-        footer_layout.addWidget(self.copyright_label)
+        # --- FOOTER ---
+        divider = QFrame()
+        divider.setFrameShape(QFrame.Shape.HLine)
 
-        # --- Assemble main layout ---
+        footer_layout = QHBoxLayout()
+
+        # 👽 Emoji logo (left corner)
+        logo_label = QLabel("👽")
+        logo_label.setObjectName("logo_label")
+        logo_label.setToolTip("Hola!")
+
+        self.footer_label = QLabel("© 2025 Luis Navarro — All rights reserved")
+        self.footer_label.setObjectName("footer")
+
+        # Add both to layout
+        footer_layout.addWidget(logo_label, alignment=Qt.AlignmentFlag.AlignLeft)
+        footer_layout.addStretch(1)
+        footer_layout.addWidget(self.footer_label, alignment=Qt.AlignmentFlag.AlignRight)
+
         main_layout.addLayout(top_layout)
-        main_layout.addStretch(1)       # push labels up
+        main_layout.addStretch(1)
         main_layout.addLayout(middle_layout)
-        main_layout.addStretch(2)       # keep buttons centered
-        main_layout.addLayout(footer_layout)  # add footer at bottom
+        main_layout.addStretch(2)
+        main_layout.addWidget(divider)
+        main_layout.addLayout(footer_layout)
 
     def user_login(self):
-        user_name, ok = QInputDialog.getText(self, "USER Login", "Enter your name:")
+        user_name, ok = QInputDialog.getText(self, "USER Login", "Enter user name:")
         if ok and user_name:
 
             if self.validate_user(user_name):
@@ -112,7 +120,7 @@ class InitWindow(QMainWindow):
                 return False
 
             with conn.cursor() as cursor:
-                query = "SELECT username FROM user WHERE username = %s"
+                query = "SELECT username FROM user WHERE BINARY username = %s"
                 cursor.execute(query, (username,))
                 result = cursor.fetchone()
 
@@ -156,6 +164,14 @@ class InitWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
+    # ✅ Apply dark theme globally
+    try:
+        with open("../themes/dark.qss", "r") as f:
+            app.setStyleSheet(f.read())
+    except Exception as e:
+        print("Error loading theme:", e)
+
     window = InitWindow()
     window.show()
     sys.exit(app.exec())

@@ -1,0 +1,368 @@
+/* ====== GLOBAL APP STYLING ====== */
+QWidget, QMainWindow {
+    background-color: #282828;
+    color: #EAEAEA;
+    font-family: "Segoe UI", "Roboto", sans-serif;
+    font-size: 14px;
+}
+
+/* ====== INPUT DIALOG ====== */
+QInputDialog, QDialog {
+    background-color: #282828;
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 8px;
+}
+
+QInputDialog QLabel {
+    color: #E0E0E0;
+    font-size: 15px;
+}
+
+QInputDialog QLineEdit {
+    background-color: #282828;
+    border: 1px solid #4A4A4A;
+    border-radius: 6px;
+    padding: 6px 8px;
+    color: #EAEAEA;
+    selection-background-color: #0078D7;
+}
+
+QInputDialog QLineEdit:focus {
+    border: 1px solid #0078D7;
+    background-color: #2E2E2E;
+}
+
+/* ====== MESSAGE BOX ====== */
+QMessageBox {
+    background-color: #282828;
+    border: 1px solid #3A3A3A;
+    border-radius: 8px;
+}
+
+QMessageBox QLabel {
+    color: #F0F0F0;
+    font-size: 14px;
+    padding: 4px;
+}
+
+QMessageBox QPushButton {
+    background-color: #2D2D2D;
+    color: #E0E0E0;
+    border: 1px solid #4A4A4A;
+    border-radius: 6px;
+    padding: 5px 14px;
+    min-width: 70px;
+    font-weight: 500;
+}
+
+QMessageBox QPushButton:hover {
+    background-color: #3A3A3A;
+    border: 1px solid #0078D7;
+}
+
+QMessageBox QPushButton:pressed {
+    background-color: #0078D7;
+    color: #FFFFFF;
+}
+
+/* ====== SCROLLBAR ====== */
+QScrollBar:vertical {
+    background: #282828;
+    width: 12px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: #444;
+    border-radius: 6px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #666;
+}
+
+/* === LABELS === */
+QLabel#title {
+    color: #09af00;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+QLabel#version {
+    color: #09af00;
+    font-size: 13px;
+}
+
+QLabel#footer {
+    color: #09af00;
+    font-size: 12px;
+}
+
+/* === PUSH BUTTONS === */
+QPushButton {
+    background-color: #FFB86C;
+    color: #000000;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 15px;
+    min-width: 200px;
+}
+
+QPushButton:hover {
+    background-color: #2b80ff;
+}
+
+QPushButton:pressed {
+    background-color: #155bd6;
+}
+
+/* === DIVIDERS === */
+QFrame[frameShape="4"] {  /* HLine */
+    color: #2a2a2a;
+}
+
+/* === ROH Label === */
+QLabel#roh_label, QLabel#top_rubber_label, QLabel#low_rubber_label, QLabel#middle_rubber_label, QLabel#shot_label, QLabel#remain_label, QLabel#total_label {
+    color: #2b80ff;
+    font-size: 24px;
+    font-weight: bold;
+    border: 1px solid #4A4A4A;
+    border-radius: 6px;
+    padding: 5px 14px;
+    qproperty-alignment: AlignHCenter;  /* center the text */
+}
+
+/* === SpinBox === */
+QSpinBox#roh_spinbox, QSpinBox#top_rubber_spinbox, QSpinBox#low_rubber_spinbox, QSpinBox#middle_rubber_spinbox, QSpinBox#shot_spinbox, QSpinBox#remain_spinbox, QSpinBox#total_spinbox {
+    background-color: #1B1B1B;
+    color: "#50FA7B";
+    border: 1px solid#4A4A4A;
+    border-radius: 6px;
+    padding: 5px 14px;
+    qproperty-alignment: AlignHCenter;  /* center the text */
+    font-size: 42px;
+}
+
+/* === SPINBOX FOCUS STATE === */
+QSpinBox#roh_spinbox:focus,
+QSpinBox#top_rubber_spinbox:focus,
+QSpinBox#low_rubber_spinbox:focus,
+QSpinBox#middle_rubber_spinbox:focus,
+QSpinBox#shot_spinbox:focus,
+QSpinBox#remain_spinbox:focus,
+QSpinBox#total_spinbox:focus {
+    border: 1px solid #0078D7;           /* Accent blue border */
+    color: #00FF9C;                      /* Bright green when focused */
+    background-color: #222222;           /* Slightly lighter background */
+}
+
+/* --- ASSETs SERIAL ENTRY --- */
+QLineEdit#asset1_serial_entry, QLineEdit#asset2_serial_entry, QLineEdit#asset3_serial_entry, QLineEdit#asset4_serial_entry, QLineEdit#asset5_serial_entry, QLineEdit#asset6_serial_entry {
+    background-color: #2E2E2E;
+    color: #808080;
+    border: 1px solid #4A4A4A;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 14px;
+    width: 200px;
+}
+
+QLineEdit#asset1_serial_entry:focus, QLineEdit#asset2_serial_entry:focus, QLineEdit#asset3_serial_entry:focus, QLineEdit#asset4_serial_entry:focus, QLineEdit#asset5_serial_entry:focus, QLineEdit#asset6_serial_entry:focus {
+    border: 1px solid #0078D7;
+    background-color: #333333;
+}
+
+/* --- ASSETs SPINBOX --- */
+QSpinBox#asset1_spinbox, QSpinBox#asset2_spinbox, QSpinBox#asset3_spinbox, QSpinBox#asset4_spinbox, QSpinBox#asset5_spinbox, QSpinBox#asset6_spinbox {
+    background-color: #2E2E2E;
+    color: #50FA7B;
+    border: 1px solid #4A4A4A;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 14px;
+    width: 100px;
+}
+
+QSpinBox#asset1_spinbox:focus, QSpinBox#asset2_spinbox:focus, QSpinBox#asset3_spinbox:focus, QSpinBox#asset4_spinbox:focus, QSpinBox#asset5_spinbox:focus, QSpinBox#asset6_spinbox:focus {
+    border: 1px solid #0078D7;
+    background-color: #333333;
+}
+
+/* === FOOTER: LOG WINDOW === */
+QTextEdit#log_window {
+    background-color: #2E2E2E;
+    color: #44475A;
+    border: 1px solid #3A3A3A;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 13px;
+}
+
+QTextEdit#log_window:focus {
+    color: #00FF9C;              /* bright green when focused */
+    border: 1px solid #0078D7;   /* highlight border color */
+    background-color: #252525;   /* subtle lift on focus */
+}
+
+/* Scrollbar inside the log window */
+QTextEdit#log_window QScrollBar:vertical {
+    background: #1E1E1E;
+    width: 12px;
+    margin: 0;
+}
+
+QTextEdit#log_window QScrollBar::handle:vertical {
+    background: #444;
+    border-radius: 6px;
+}
+
+QTextEdit#log_window QScrollBar::handle:vertical:hover {
+    background: #666;
+}
+
+/* === JOBS LIST (QListWidget) === */
+QListWidget#jobs_list {
+    background-color: #1B1B1B;      /* Dark background */
+    color: #EAEAEA;                 /* Light text */
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 6px;
+    font-family: "Consolas", monospace;
+    font-size: 18px;
+    selection-background-color: #0078D7;  /* Blue highlight */
+    selection-color: #FFFFFF;
+}
+
+/* === LIST ITEM HOVER === */
+QListWidget#jobs_list::item:hover {
+    background-color: #2B2B2B;
+    color: #FFFFFF;
+}
+
+/* === LIST ITEM SELECTED === */
+QListWidget#jobs_list::item:selected {
+    background-color: #0078D7;
+    color: #000000;
+    border: none;
+}
+
+/* === SCROLLBAR FOR LIST === */
+QListWidget#jobs_list QScrollBar:vertical {
+    background: #1B1B1B;
+    width: 10px;
+    margin: 0;
+}
+
+QListWidget#jobs_list QScrollBar::handle:vertical {
+    background: #444;
+    border-radius: 5px;
+}
+
+QListWidget#jobs_list QScrollBar::handle:vertical:hover {
+    background: #666;
+}
+
+
+
+/* === QCheckBox (global dark mode) === */
+QCheckBox {
+    spacing: 8px;
+    color: #E0E0E0;                    /* label text color */
+    font-size: 16px;
+}
+
+/* Box base */
+QCheckBox::indicator {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    border: 2px solid #4A4A4A;         /* subtle border */
+    background-color: #2A2A2A;         /* dark gray background */
+}
+
+/* Hover effect */
+QCheckBox::indicator:hover {
+    border: 2px solid #2ECC71;         /* subtle dark green glow */
+}
+
+/* Checked state (dark green) */
+QCheckBox::indicator:checked {
+    background-color: #2ECC71;         /* dark, modern green */
+    border: 2px solid #2ECC71;
+}
+
+/* Disabled state */
+QCheckBox::indicator:disabled {
+    background-color: #3A3A3A;
+    border: 2px solid #555;
+}
+
+QLabel#info_label {
+    color: #808080;
+    background-color: #2A2A2A;
+    border: 1px solid #333;      /* subtle outline */
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    qproperty-alignment: AlignHCenter;  /* center the text */
+}
+
+QLabel#floating_text {
+    color: #00FFFF;
+    font-size: 150px;
+    font-weight: 800;
+    background: transparent;
+}
+
+/* === GO PREVIUS Button === */
+QPushButton#arrow_btn, QPushButton#job_select_btn {
+    color: #FFB86C;
+    background-color: #282828;  /* Blue Neon */
+    border: 1px solid #4A4A4A;
+    border-radius: 6px;
+    font-size: 26px;              /* arrow size */
+    font-weight: bold;
+}
+
+QPushButton#arrow_btn:hover, QPushButton#job_select_btn:hover {
+    background-color: #2b80ff;
+}
+
+QPushButton#arrow_btn:pressed, QPushButton#job_select_btn:pressed {
+    background-color: #282828;  /* Darker when pressed */
+}
+
+/* 👽 Footer emoji logo */
+QLabel#logo_label {
+    background: transparent;
+    color: #aaffff;           /* Soft cyan tone for accent */
+    font-size: 32px;
+    padding-left: 4px;
+    qproperty-alignment: 'AlignLeft | AlignVCenter';
+}
+
+/* Optional: make the emoji glow subtly */
+QLabel#logo_label:hover {
+    color: #66ffff;           /* Slightly brighter on hover */
+    text-shadow: 0 0 10px #55ffff;
+}
+
+/* Footer text label */
+QLabel#footer {
+    color: #aaaaaa;
+    font-size: 12px;
+    qproperty-alignment: 'AlignRight | AlignVCenter';
+}
+
+QToolTip {
+    background-color: #222;
+    color: #00ffff;
+    border: 1px solid #00cccc;
+    padding: 4px 8px;
+    font-family: "Segoe UI";
+    font-size: 12px;
+    border-radius: 6px;
+}

@@ -4,8 +4,8 @@ from PyQt6.QtWidgets import (
     QSpinBox, QCheckBox, QPushButton, QTextEdit, QLineEdit, QMessageBox
 
 )
-from PyQt6.QtCore import QTimer
-
+from PyQt6.QtCore import QTimer, QPropertyAnimation, QPoint, QEasingCurve, QSize
+from PyQt6.QtGui import QIcon
 import config
 from db.connection import get_connection
 from utils.log_entry import add_log_entry_db
@@ -37,11 +37,25 @@ class CounterDashboardWindow(QMainWindow):
 
         # Section0: Info
         self.info_label = QLabel(f"Stage Tracker | Job: {self.job_name} | Crew: {self.crew_cell}")
-        main_layout.addWidget(self.info_label)
+        self.info_label.setObjectName("info_label")
+
+        top_row = QHBoxLayout()
+
+        #button to job_selection
+        job_select_btn = QPushButton("◀")
+        job_select_btn.setObjectName("job_select_btn")
+        job_select_btn.setFixedSize(40, 36)
+        job_select_btn.setToolTip("Back to Job Selection")
+        job_select_btn.clicked.connect(self.go_to_job_selection)
+        top_row.addWidget(job_select_btn)
+
+        top_row.addWidget(self.info_label)
+        top_row.addStretch()
+        main_layout.insertLayout(0, top_row)
 
 
         # Section1: Edit counters checkbox
-        self.edit_counters_checkbox = QCheckBox("Enable editing all counters")
+        self.edit_counters_checkbox = QCheckBox("Edit Counters")
         self.edit_counters_checkbox.setChecked(False)
 
         self.edit_counters_checkbox.stateChanged.connect(self.toggle_all_counters)
@@ -67,41 +81,69 @@ class CounterDashboardWindow(QMainWindow):
         main_grid.addWidget(QWidget(), 0, 6)
 
         # Row 1: Labels
-        main_grid.addWidget(QLabel("ROH"), 1, 0)
-        main_grid.addWidget(QLabel("Top Rubber"), 1, 1)
-        main_grid.addWidget(QLabel("Middle Rubber"), 1, 2)
-        main_grid.addWidget(QLabel("Low Rubber"), 1, 3)
-        main_grid.addWidget(QLabel("Shot"), 1, 4)
-        main_grid.addWidget(QLabel("Remain"), 1, 5)
-        main_grid.addWidget(QLabel("Total"), 1, 6)
+        self.roh_label = QLabel("ROH")
+        self.roh_label.setObjectName("roh_label")
+        main_grid.addWidget(self.roh_label, 1, 0)
+
+        self.top_rubber_label = QLabel("Top\nRubber")
+        self.top_rubber_label.setObjectName("top_rubber_label")
+        main_grid.addWidget(self.top_rubber_label, 1, 1)
+
+        self.middle_rubber_label = QLabel("Middle\nRubber")
+        self.middle_rubber_label.setObjectName("middle_rubber_label")
+        main_grid.addWidget(self.middle_rubber_label, 1, 2)
+
+        self.low_rubber_label = QLabel("Low\nRubber")
+        self.low_rubber_label.setObjectName("low_rubber_label")
+        main_grid.addWidget(self.low_rubber_label, 1, 3)
+
+        self.shot_label = QLabel("Shot")
+        self.shot_label.setObjectName("shot_label")
+        main_grid.addWidget(self.shot_label, 1, 4)
+
+        self.remain_label = QLabel("Remain")
+        self.remain_label.setObjectName("remain_label")
+        main_grid.addWidget(self.remain_label, 1, 5)
+
+        self.total_label = QLabel("Total")
+        self.total_label.setObjectName("total_label")
+        main_grid.addWidget(self.total_label, 1, 6)
+
 
         # Row 2: Spinboxes
         self.roh_spinbox = QSpinBox()
+        self.roh_spinbox.setObjectName("roh_spinbox")
         self.roh_spinbox.setRange(0, 9999)
         main_grid.addWidget(self.roh_spinbox, 2, 0)
 
         self.top_rubber_spinbox = QSpinBox()
+        self.top_rubber_spinbox.setObjectName("top_rubber_spinbox")
         self.top_rubber_spinbox.setRange(0, 9999)
         main_grid.addWidget(self.top_rubber_spinbox, 2, 1)
 
         self.middle_rubber_spinbox = QSpinBox()
+        self.middle_rubber_spinbox.setObjectName("middle_rubber_spinbox")
         self.middle_rubber_spinbox.setRange(0, 9999)
         main_grid.addWidget(self.middle_rubber_spinbox, 2, 2)
 
         self.low_rubber_spinbox = QSpinBox()
+        self.low_rubber_spinbox.setObjectName("low_rubber_spinbox")
         self.low_rubber_spinbox.setRange(0, 9999)
         main_grid.addWidget(self.low_rubber_spinbox, 2, 3)
 
         self.shot_spinbox = QSpinBox()
+        self.shot_spinbox.setObjectName("shot_spinbox")
         self.shot_spinbox.setRange(0, 9999)
         main_grid.addWidget(self.shot_spinbox, 2, 4)
 
         self.remain_spinbox = QSpinBox()
+        self.remain_spinbox.setObjectName("remain_spinbox")
         self.remain_spinbox.setRange(0, 9999)
         main_grid.addWidget(self.remain_spinbox, 2, 5)
         self.remain_spinbox.setEnabled(False)  # Remain is not editable
 
         self.total_spinbox = QSpinBox()
+        self.total_spinbox.setObjectName("total_spinbox")
         self.total_spinbox.setRange(0, 9999)
         main_grid.addWidget(self.total_spinbox, 2, 6)
 
@@ -117,7 +159,9 @@ class CounterDashboardWindow(QMainWindow):
         self.asset1_checkbox = QCheckBox()
         self.asset1_checkbox.setChecked(True)
         self.asset1_serial_entry = QLineEdit()
+        self.asset1_serial_entry.setObjectName("asset1_serial_entry")
         self.asset1_spinbox = QSpinBox()
+        self.asset1_spinbox.setObjectName("asset1_spinbox")
         assets_grid.addWidget(self.asset1_checkbox, 0, 0)
         assets_grid.addWidget(self.asset1_serial_entry, 0, 1)
         assets_grid.addWidget(self.asset1_spinbox, 0, 2)
@@ -126,7 +170,9 @@ class CounterDashboardWindow(QMainWindow):
         # Asset 2
         self.asset2_checkbox = QCheckBox()
         self.asset2_serial_entry = QLineEdit()
+        self.asset2_serial_entry.setObjectName("asset2_serial_entry")
         self.asset2_spinbox = QSpinBox()
+        self.asset2_spinbox.setObjectName("asset2_spinbox")
         assets_grid.addWidget(self.asset2_checkbox, 1, 0)
         assets_grid.addWidget(self.asset2_serial_entry, 1, 1)
         assets_grid.addWidget(self.asset2_spinbox, 1, 2)
@@ -135,7 +181,9 @@ class CounterDashboardWindow(QMainWindow):
         # Asset 3
         self.asset3_checkbox = QCheckBox()
         self.asset3_serial_entry = QLineEdit()
+        self.asset3_serial_entry.setObjectName("asset3_serial_entry")
         self.asset3_spinbox = QSpinBox()
+        self.asset3_spinbox.setObjectName("asset3_spinbox")
         assets_grid.addWidget(self.asset3_checkbox, 2, 0)
         assets_grid.addWidget(self.asset3_serial_entry, 2, 1)
         assets_grid.addWidget(self.asset3_spinbox, 2, 2)
@@ -144,7 +192,9 @@ class CounterDashboardWindow(QMainWindow):
         # Asset 4
         self.asset4_checkbox = QCheckBox()
         self.asset4_serial_entry = QLineEdit()
+        self.asset4_serial_entry.setObjectName("asset4_serial_entry")
         self.asset4_spinbox = QSpinBox()
+        self.asset4_spinbox.setObjectName("asset4_spinbox")
         assets_grid.addWidget(self.asset4_checkbox, 3, 0)
         assets_grid.addWidget(self.asset4_serial_entry, 3, 1)
         assets_grid.addWidget(self.asset4_spinbox, 3, 2)
@@ -153,7 +203,9 @@ class CounterDashboardWindow(QMainWindow):
         # Asset 5
         self.asset5_checkbox = QCheckBox()
         self.asset5_serial_entry = QLineEdit()
+        self.asset5_serial_entry.setObjectName("asset5_serial_entry")
         self.asset5_spinbox = QSpinBox()
+        self.asset5_spinbox.setObjectName("asset5_spinbox")
         assets_grid.addWidget(self.asset5_checkbox, 4, 0)
         assets_grid.addWidget(self.asset5_serial_entry, 4, 1)
         assets_grid.addWidget(self.asset5_spinbox, 4, 2)
@@ -162,7 +214,9 @@ class CounterDashboardWindow(QMainWindow):
         # Asset 6
         self.asset6_checkbox = QCheckBox()
         self.asset6_serial_entry = QLineEdit()
+        self.asset6_serial_entry.setObjectName("asset6_serial_entry")
         self.asset6_spinbox = QSpinBox()
+        self.asset6_spinbox.setObjectName("asset6_spinbox")
         assets_grid.addWidget(self.asset6_checkbox, 5, 0)
         assets_grid.addWidget(self.asset6_serial_entry, 5, 1)
         assets_grid.addWidget(self.asset6_spinbox, 5, 2)
@@ -187,6 +241,7 @@ class CounterDashboardWindow(QMainWindow):
 
         # Section4: Footer
         self.log_window = QTextEdit()
+        self.log_window.setObjectName("log_window")
         self.log_window.setReadOnly(True)
         self.log_window.setFixedHeight(100)  # Adjust height as needed
         main_layout.addWidget(self.log_window)
@@ -205,31 +260,43 @@ class CounterDashboardWindow(QMainWindow):
 
     def toggle_all_counters(self, state):
         enabled = state == 2
-        self.roh_spinbox.setEnabled(enabled)
-        self.top_rubber_spinbox.setEnabled(enabled)
-        self.middle_rubber_spinbox.setEnabled(enabled)
-        self.low_rubber_spinbox.setEnabled(enabled)
-        self.shot_spinbox.setEnabled(enabled)
-        self.total_spinbox.setEnabled(enabled) # Total is editable only if checkbox is checked
-        self.asset1_spinbox.setEnabled(enabled)
-        self.asset2_spinbox.setEnabled(enabled)
-        self.asset3_spinbox.setEnabled(enabled)
-        self.asset4_spinbox.setEnabled(enabled)
-        self.asset5_spinbox.setEnabled(enabled)
-        self.asset6_spinbox.setEnabled(enabled)
-        self.asset1_serial_entry.setEnabled(enabled)
-        self.asset2_serial_entry.setEnabled(enabled)
-        self.asset3_serial_entry.setEnabled(enabled)
-        self.asset4_serial_entry.setEnabled(enabled)
-        self.asset5_serial_entry.setEnabled(enabled)
-        self.asset6_serial_entry.setEnabled(enabled)
+
+        button_symbols = QSpinBox.ButtonSymbols.UpDownArrows if enabled else QSpinBox.ButtonSymbols.NoButtons
+
+        spinboxes = [
+            self.roh_spinbox, self.top_rubber_spinbox, self.middle_rubber_spinbox,
+            self.low_rubber_spinbox, self.shot_spinbox, self.remain_spinbox, self.total_spinbox,
+            self.asset1_spinbox, self.asset2_spinbox, self.asset3_spinbox,
+            self.asset4_spinbox, self.asset5_spinbox, self.asset6_spinbox
+        ]
+
+        for spinbox in spinboxes:
+            spinbox.setEnabled(enabled)
+            spinbox.setButtonSymbols(button_symbols)
+
+        serial_entries = [
+            self.asset1_serial_entry, self.asset2_serial_entry, self.asset3_serial_entry,
+            self.asset4_serial_entry, self.asset5_serial_entry, self.asset6_serial_entry
+        ]
+        for entry in serial_entries:
+            entry.setEnabled(enabled)
+
+            # Disable stage/job buttons and gray out when editing is enabled
+            for btn in [self.plus_stage_btn, self.minus_stage_btn, self.rehead_btn, self.finish_job_btn]:
+                btn.setEnabled(not enabled)
+                if enabled:
+                    btn.setStyleSheet("background-color: lightgray;")
+                else:
+                    btn.setStyleSheet("")
 
         self.update_remain()
+
         if state == 0:
             self.update_logs(event_type="Edit", message="Counter Values Edited Manually.")
             self.update_counters()
 
     def increase_stage(self):
+        self.show_floating_text("+1 Stage")
         if self.roh_enable_checkbox.isChecked():
             self.roh_spinbox.setValue(self.roh_spinbox.value() + 1)
         if self.top_rubber_enable_checkbox.isChecked():
@@ -258,6 +325,7 @@ class CounterDashboardWindow(QMainWindow):
         self.update_counters()
 
     def decrease_stage(self):
+        self.show_floating_text("-1 Stage")
         if self.roh_enable_checkbox.isChecked() and self.roh_spinbox.value() > 0:
             self.roh_spinbox.setValue(self.roh_spinbox.value() - 1)
         if self.top_rubber_enable_checkbox.isChecked() and self.top_rubber_spinbox.value() > 0:
@@ -286,6 +354,7 @@ class CounterDashboardWindow(QMainWindow):
         self.update_counters()
 
     def rehead_roh(self):
+        self.show_floating_text("Rehead")
         self.roh_spinbox.setValue(0)
         self.update_logs(event_type="Rehead", message="ROH counter reheaded to 0.")
         self.update_counters()
@@ -483,18 +552,17 @@ class CounterDashboardWindow(QMainWindow):
         self.log_window.append(entry)
 
     def init_disable_all_counters(self):
-        self.roh_spinbox.setEnabled(False)
-        self.top_rubber_spinbox.setEnabled(False)
-        self.middle_rubber_spinbox.setEnabled(False)
-        self.low_rubber_spinbox.setEnabled(False)
-        self.shot_spinbox.setEnabled(False)
-        self.total_spinbox.setEnabled(False)  # Total is editable only if checkbox is checked
-        self.asset1_spinbox.setEnabled(False)
-        self.asset2_spinbox.setEnabled(False)
-        self.asset3_spinbox.setEnabled(False)
-        self.asset4_spinbox.setEnabled(False)
-        self.asset5_spinbox.setEnabled(False)
-        self.asset6_spinbox.setEnabled(False)
+        spinboxes = [
+            self.roh_spinbox, self.top_rubber_spinbox, self.middle_rubber_spinbox,
+            self.low_rubber_spinbox, self.shot_spinbox, self.remain_spinbox,  self.total_spinbox,
+            self.asset1_spinbox, self.asset2_spinbox, self.asset3_spinbox,
+            self.asset4_spinbox, self.asset5_spinbox, self.asset6_spinbox
+        ]
+
+        for spinbox in spinboxes:
+            spinbox.setEnabled(False)
+            spinbox.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
+
         self.asset1_serial_entry.setEnabled(False)
         self.asset2_serial_entry.setEnabled(False)
         self.asset3_serial_entry.setEnabled(False)
@@ -563,6 +631,44 @@ class CounterDashboardWindow(QMainWindow):
 
         except Exception as e:
             print("Error checking session validity:", e)
+
+    def show_floating_text(self, text: str):
+        floating_label = QLabel(text, self)
+        floating_label.setObjectName("floating_text")
+        floating_label.adjustSize()
+
+        # Center it
+        center_x = (self.width() - floating_label.width()) // 2
+        center_y = (self.height() - floating_label.height()) // 2
+        floating_label.move(center_x, center_y)
+        floating_label.show()
+
+        # Position animation
+        pos_anim = QPropertyAnimation(floating_label, b"pos", floating_label)
+        pos_anim.setDuration(2000)
+        pos_anim.setStartValue(QPoint(center_x, center_y))
+        pos_anim.setEndValue(QPoint(center_x, center_y - 80))
+        pos_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        # Opacity animation
+        opacity_anim = QPropertyAnimation(floating_label, b"windowOpacity", floating_label)
+        opacity_anim.setDuration(2000)
+        opacity_anim.setStartValue(1.0)
+        opacity_anim.setEndValue(0.0)
+        opacity_anim.setEasingCurve(QEasingCurve.Type.InCubic)
+
+        # Delete after finishing
+        opacity_anim.finished.connect(floating_label.deleteLater)
+
+        # Start animations
+        pos_anim.start()
+        opacity_anim.start()
+
+    def go_to_job_selection(self):
+        from gui.job_selection import JobSelectionWindow
+        self.job_selection_window = JobSelectionWindow(user_name=self.user_name)
+        self.job_selection_window.show()
+        self.close()
 
 
 

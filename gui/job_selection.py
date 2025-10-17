@@ -1,9 +1,10 @@
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QListWidget,
-    QInputDialog, QMessageBox, QListWidgetItem, QDialog, QComboBox
+    QInputDialog, QMessageBox, QListWidgetItem, QDialog, QComboBox, QHBoxLayout
 )
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtGui import QIcon
 import config
 from db.connection import get_connection
 from gui.counter_dashboard import CounterDashboardWindow
@@ -25,12 +26,29 @@ class JobSelectionWindow(QMainWindow):
         # Main layout
         layout = QVBoxLayout(central_widget)
 
+        # In __init__ after setting up layout
+        arrow_btn = QPushButton("◀")  # or "⬅", "↩", "⮐", "◀" — pick any arrow you like
+        arrow_btn.setObjectName("arrow_btn")
+        arrow_btn.setFixedSize(40, 36)
+        arrow_btn.setToolTip("Back to Home")
+        arrow_btn.clicked.connect(self.go_to_init_window)
+
+
         # Welcome label
         self.welcome_label = QLabel(f"Welcome, {self.user_name}!")
-        layout.addWidget(self.welcome_label)
+
+        # Place arrow and welcome label in a horizontal layout
+        top_row = QHBoxLayout()
+        top_row.addWidget(arrow_btn)
+        top_row.addWidget(self.welcome_label)
+        top_row.addStretch()
+        layout.insertLayout(0, top_row)  # Add at the top
+
+        # layout.addWidget(self.welcome_label)
 
         # Jobs list
         self.jobs_list = QListWidget()
+        self.jobs_list.setObjectName("jobs_list")
         layout.addWidget(self.jobs_list)
 
         # Load jobs (later: filter by crew cell & active status)
@@ -53,7 +71,7 @@ class JobSelectionWindow(QMainWindow):
             conn = get_connection(db_name=config.DB_NAME)
             with conn.cursor() as cursor:
                 query = """
-                    SELECT id, job_name, crew_cell, status, session_user
+                    SELECT id, job_name, crew_cell, district, status, session_user
                     FROM jobs
                     WHERE status = 'active'
                 """
@@ -66,13 +84,28 @@ class JobSelectionWindow(QMainWindow):
             return
 
         self.jobs_list.clear()
+
+        # Add header row
+        header_text = f"{'Job Name':<15} | {'Crew Cell':<15} | {'District':<15} | {'Status':<15} | {'Session User':<15}"
+        header_item = QListWidgetItem(header_text)
+        header_item.setFlags(Qt.ItemFlag.NoItemFlags)
+        header_item.setForeground(Qt.GlobalColor.cyan)
+        self.jobs_list.addItem(header_item)
+
         for job in active_jobs:
             id = job['id']
             job_name = job['job_name']
             crew_cell = job['crew_cell']
+            crew_district= job['district']
             status = job['status']
             session_user = job['session_user'] if 'session_user' in job else None
-            item_text = f"Job_name: {job_name} | Crew_cell: {crew_cell} | Job_status: {status} | active_session: {session_user}"
+            item_text = (
+                f"{job_name:<15} | "
+                f"{crew_cell:<15} | "
+                f"{crew_district:<15} | "
+                f"{status:<15} | "
+                f"{session_user:<15}"
+            )
             item = QListWidgetItem(item_text)
             item.setData(Qt.ItemDataRole.UserRole, id)  # Store job_id
             self.jobs_list.addItem(item)
@@ -191,6 +224,24 @@ class JobSelectionWindow(QMainWindow):
 
         def on_create():
             crew_cell = crew_combo.currentText()
+
+            try:
+                conn = get_connection(db_name=config.DB_NAME)
+                with conn.cursor() as cursor:
+                    # Get district for the selected crew_cell
+                    cursor.execute(
+                        "SELECT district FROM cells WHERE crew_name=%s LIMIT 1",
+                        (crew_cell,)
+                    )
+                    row = cursor.fetchone()
+                    district = row['district'] if row else None
+            except Exception as e:
+                QMessageBox.warning(self, "Error", f"Could not retrieve district: {e}")
+                dialog.reject()
+                return
+
+
+
             try:
                 conn = get_connection(db_name=config.DB_NAME)
                 with conn.cursor() as cursor:
@@ -207,10 +258,10 @@ class JobSelectionWindow(QMainWindow):
                     # Insert new job
                     cursor.execute(
                         """
-                        INSERT INTO jobs (job_name, crew_cell, status, started_at, session_user)
-                        VALUES (%s, %s, 'active', NOW(), %s)
+                        INSERT INTO jobs (job_name, crew_cell, district, status, started_at, session_user)
+                        VALUES (%s, %s, %s, 'active', NOW(), %s)
                         """,
-                        (job_name, crew_cell, self.user_name)
+                        (job_name, crew_cell, district,  self.user_name)
                     )
 
                     job_id = cursor.lastrowid
@@ -242,3 +293,9 @@ class JobSelectionWindow(QMainWindow):
 
         ok_button.clicked.connect(on_create)
         dialog.exec()
+
+    def go_to_init_window(self):
+        from gui.init_window import InitWindow
+        self.init_window = InitWindow()
+        self.init_window.show()
+        self.close()
