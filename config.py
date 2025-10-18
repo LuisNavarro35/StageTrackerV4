@@ -1,8 +1,15 @@
-import os
+import os, sys
 from dotenv import load_dotenv
 
+
+def resource_path(relative_path):
+    """Return absolute path to resource, works for dev and PyInstaller bundle"""
+    base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
 # Load environment variables from .env
-load_dotenv()
+env_path = resource_path(".env")
+load_dotenv(env_path)
 
 # Database configuration
 DB_HOST = os.getenv("DB_HOST")
