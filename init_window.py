@@ -5,10 +5,16 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QPixmap
 import sys
+import os
 import config
 from db.connection import get_connection
 from werkzeug.security import check_password_hash
 from gui.job_selection import JobSelectionWindow
+
+def resource_path(relative_path):
+    """Return absolute path to resource, works for dev and PyInstaller .exe"""
+    base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
 
 class InitWindow(QMainWindow):
     def __init__(self):
@@ -165,9 +171,10 @@ class InitWindow(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
+    qss_path=resource_path("themes/dark.qss")
     # ✅ Apply dark theme globally
     try:
-        with open("themes/dark.qss", "r") as f:
+        with open(qss_path, "r") as f:
             app.setStyleSheet(f.read())
     except Exception as e:
         print("Error loading theme:", e)
