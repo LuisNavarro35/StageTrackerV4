@@ -3,8 +3,7 @@ from PyQt6.QtWidgets import (
     QInputDialog, QMessageBox, QListWidgetItem, QDialog, QComboBox, QHBoxLayout
 )
 
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import Qt
 import config
 from db.connection import get_connection
 from gui.counter_dashboard import CounterDashboardWindow
@@ -295,7 +294,7 @@ class JobSelectionWindow(QMainWindow):
         dialog.exec()
 
     def go_to_init_window(self):
-        from gui.init_window import InitWindow
+        from init_window import InitWindow
         self.init_window = InitWindow()
         self.init_window.show()
         self.close()

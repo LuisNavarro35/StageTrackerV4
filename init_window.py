@@ -167,7 +167,7 @@ if __name__ == "__main__":
 
     # ✅ Apply dark theme globally
     try:
-        with open("../themes/dark.qss", "r") as f:
+        with open("themes/dark.qss", "r") as f:
             app.setStyleSheet(f.read())
     except Exception as e:
         print("Error loading theme:", e)

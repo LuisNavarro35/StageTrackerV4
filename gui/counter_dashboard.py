@@ -4,8 +4,7 @@ from PyQt6.QtWidgets import (
     QSpinBox, QCheckBox, QPushButton, QTextEdit, QLineEdit, QMessageBox
 
 )
-from PyQt6.QtCore import QTimer, QPropertyAnimation, QPoint, QEasingCurve, QSize
-from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import QTimer, QPropertyAnimation, QPoint, QEasingCurve
 import config
 from db.connection import get_connection
 from utils.log_entry import add_log_entry_db
@@ -590,7 +589,7 @@ class CounterDashboardWindow(QMainWindow):
 
                 self.update_logs(event_type="Database", message=f"Job '{self.job_name}' marked as finished.")
 
-                from gui.init_window import InitWindow  # Import here to avoid circular import
+                from init_window import InitWindow  # Import here to avoid circular import
                 self.init_win = InitWindow()
                 self.init_win.show()
                 self.close()  # Close the dashboard
