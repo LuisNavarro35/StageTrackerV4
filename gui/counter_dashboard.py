@@ -538,11 +538,12 @@ class CounterDashboardWindow(QMainWindow):
 
     def update_logs(self, event_type, message):
         log_job_id = self.job_id
+        log_jobname= self.job_name
         log_user_name = self.user_name
         log_event_type = event_type
         log_new_value = self.get_widget_values()
         log_message = message
-        add_log_entry_db(job_id=log_job_id, user_name=log_user_name, event_type=log_event_type,
+        add_log_entry_db(job_id=log_job_id, job_name=log_jobname, user_name=log_user_name, event_type=log_event_type,
                          new_value=log_new_value, message=log_message)
         # Also update the log window in the GUI
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

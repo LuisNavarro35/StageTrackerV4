@@ -14,6 +14,7 @@ class JobSelectionWindow(QMainWindow):
         super().__init__()
         self.user_name = user_name
         self.is_admin = is_admin
+        self.job_name = None
 
         self.setWindowTitle("Job Selection")
         self.setFixedSize(1000, 600)
@@ -118,6 +119,7 @@ class JobSelectionWindow(QMainWindow):
 
         item = selected_items[0]
         job_id = item.data(Qt.ItemDataRole.UserRole)
+        self.job_name = item.text().split("|")[0].strip()
 
         try:
             conn = get_connection(db_name=config.DB_NAME)
@@ -139,7 +141,7 @@ class JobSelectionWindow(QMainWindow):
 
             # If same user — allow entry
             elif current_session_user == self.user_name:
-                add_log_entry_db(job_id=job_id, user_name=self.user_name, event_type="Session",
+                add_log_entry_db(job_id=job_id, job_name=self.job_name, user_name=self.user_name, event_type="Session",
                                  new_value=None, message=f"Session user Allowed to: {self.user_name}")
                 self.launch_dashboard(job_id)
 
@@ -153,7 +155,7 @@ class JobSelectionWindow(QMainWindow):
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
                 )
                 if reply == QMessageBox.StandardButton.Yes:
-                    add_log_entry_db(job_id=job_id, user_name=self.user_name, event_type="Session",
+                    add_log_entry_db(job_id=job_id, job_name=self.job_name, user_name=self.user_name, event_type="Session",
                                      new_value=None, message=f"Force Session Selected: {self.user_name}")
                     self.assign_session_user(job_id)
                     self.launch_dashboard(job_id)
@@ -175,7 +177,7 @@ class JobSelectionWindow(QMainWindow):
                 )
                 conn.commit()
             conn.close()
-            add_log_entry_db(job_id=job_id, user_name=self.user_name, event_type="Session",
+            add_log_entry_db(job_id=job_id, job_name=self.job_name, user_name=self.user_name, event_type="Session",
                              new_value=None, message=f"Session user set to {self.user_name}")
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Failed to update session user: {e}")
