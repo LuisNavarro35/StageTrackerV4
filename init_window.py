@@ -38,7 +38,7 @@ class InitWindow(QMainWindow):
         self.title_label.setFont(QFont("Segoe UI", 24))
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-        self.version_label = QLabel("Version 4.0")
+        self.version_label = QLabel("Version 4.1")
         self.version_label.setObjectName("version")
         self.version_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
