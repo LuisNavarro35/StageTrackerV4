@@ -190,69 +190,88 @@ class JobSelectionWindow(QMainWindow):
         self.close()
 
     def create_new_job(self):
-        """Handle creation of a new job with crew cell selection."""
+        """Handle creation of a new job with district and crew cell selection."""
         try:
             conn = get_connection(db_name=config.DB_NAME)
             with conn.cursor() as cursor:
-                cursor.execute("SELECT crew_name FROM cells")
-                crew_cells = [row['crew_name'] for row in cursor.fetchall()]
+                # Get all districts from the new districts table
+                cursor.execute("SELECT district_name FROM districts ORDER BY district_name")
+                districts = [row['district_name'] for row in cursor.fetchall()]
             conn.close()
         except Exception as e:
-            QMessageBox.warning(self, "Error", f"Could not load crew cells: {e}")
+            QMessageBox.warning(self, "Error", f"Could not load districts: {e}")
             return
 
-        # Custom dialog for job name and crew cell
+        # Create dialog
         dialog = QDialog(self)
         dialog.setWindowTitle("Create New Job")
         layout = QVBoxLayout(dialog)
 
-        job_label = QLabel("Enter job name:")
-        layout.addWidget(job_label)
-        job_name_input = QInputDialog()
+        # --- Job Name Input ---
         job_name, ok = QInputDialog.getText(self, "New Job", "Enter job name:")
         if not ok or not job_name:
             return
 
-        crew_label = QLabel("Select crew cell:")
+        # --- District Combo ---
+        district_label = QLabel("Select District:")
+        layout.addWidget(district_label)
+        district_combo = QComboBox()
+        district_combo.setObjectName("district_combo")
+        district_combo.addItems(districts)
+        layout.addWidget(district_combo)
+
+        # --- Crew Cell Combo ---
+        crew_label = QLabel("Select Crew Cell:")
         layout.addWidget(crew_label)
         crew_combo = QComboBox()
-        crew_combo.addItems(crew_cells)
+        crew_combo.setObjectName("crew_combo")
         layout.addWidget(crew_combo)
 
+        # Function to populate crew cells based on selected district
+        def load_crews_for_district(selected_district):
+            try:
+                conn = get_connection(db_name=config.DB_NAME)
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT crew_name FROM cells WHERE district=%s ORDER BY crew_name",
+                        (selected_district,)
+                    )
+                    crew_cells = [row['crew_name'] for row in cursor.fetchall()]
+                conn.close()
+
+                crew_combo.clear()
+                crew_combo.addItems(crew_cells)
+            except Exception as e:
+                QMessageBox.warning(dialog, "Error", f"Could not load crew cells: {e}")
+
+        # Load initial crew list
+        load_crews_for_district(district_combo.currentText())
+
+        # Update crew list when district changes
+        district_combo.currentTextChanged.connect(load_crews_for_district)
+
+        # --- Create Button ---
         ok_button = QPushButton("Create")
         layout.addWidget(ok_button)
-        dialog.setLayout(layout)
 
         def on_create():
             crew_cell = crew_combo.currentText()
+            district = district_combo.currentText()
 
-            try:
-                conn = get_connection(db_name=config.DB_NAME)
-                with conn.cursor() as cursor:
-                    # Get district for the selected crew_cell
-                    cursor.execute(
-                        "SELECT district FROM cells WHERE crew_name=%s LIMIT 1",
-                        (crew_cell,)
-                    )
-                    row = cursor.fetchone()
-                    district = row['district'] if row else None
-            except Exception as e:
-                QMessageBox.warning(self, "Error", f"Could not retrieve district: {e}")
-                dialog.reject()
+            if not crew_cell:
+                QMessageBox.warning(dialog, "Missing Crew", "Please select a crew cell.")
                 return
 
-
-
             try:
                 conn = get_connection(db_name=config.DB_NAME)
                 with conn.cursor() as cursor:
+                    # Check if crew already has an active job
                     cursor.execute(
                         "SELECT 1 FROM jobs WHERE crew_cell=%s AND status='active' LIMIT 1",
                         (crew_cell,)
                     )
-                    exists = cursor.fetchone() is not None
-                    if exists:
-                        QMessageBox.warning(self, "Warning", f"Crew '{crew_cell}' already has an active job.")
+                    if cursor.fetchone():
+                        QMessageBox.warning(dialog, "Warning", f"Crew '{crew_cell}' already has an active job.")
                         dialog.reject()
                         return
 
@@ -262,7 +281,7 @@ class JobSelectionWindow(QMainWindow):
                         INSERT INTO jobs (job_name, crew_cell, district, status, started_at, session_user)
                         VALUES (%s, %s, %s, 'active', NOW(), %s)
                         """,
-                        (job_name, crew_cell, district,  self.user_name)
+                        (job_name, crew_cell, district, self.user_name)
                     )
 
                     job_id = cursor.lastrowid
@@ -289,10 +308,11 @@ class JobSelectionWindow(QMainWindow):
                 self.load_jobs()
                 dialog.accept()
             except Exception as e:
-                QMessageBox.warning(self, "Error", f"Could not create job: {e}")
+                QMessageBox.warning(dialog, "Error", f"Could not create job: {e}")
                 dialog.reject()
 
         ok_button.clicked.connect(on_create)
+        dialog.setLayout(layout)
         dialog.exec()
 
     def go_to_init_window(self):

@@ -2,9 +2,9 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Stage Tracker App"
-#define MyAppVersion "4.0"
+#define MyAppVersion "4.1"
 #define MyAppPublisher "Luis Navarro"
-#define MyAppExeName "StageTrackerV4.0.exe"
+#define MyAppExeName "StageTrackerV4.1.exe"
 #define MyAppAssocName MyAppName + " File"
 #define MyAppAssocExt ".myp"
 #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
@@ -32,7 +32,7 @@ DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only).
 ;PrivilegesRequired=lowest
 OutputDir=C:\Users\user\PycharmProjects\StageTrackerV4\Installer
-OutputBaseFilename=Setup_StageTrackerApp_v4.0
+OutputBaseFilename=Setup_StageTrackerApp_v4.1
 SetupIconFile=C:\Users\user\PycharmProjects\StageTrackerV4\assets\alien.ico
 SolidCompression=yes
 WizardStyle=modern
