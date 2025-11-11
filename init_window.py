@@ -10,6 +10,7 @@ import config
 from db.connection import get_connection
 from werkzeug.security import check_password_hash
 from gui.job_selection import JobSelectionWindow
+from gui.admin_window import AdminWindow
 
 def resource_path(relative_path):
     """Return absolute path to resource, works for dev and PyInstaller .exe"""
@@ -108,6 +109,9 @@ class InitWindow(QMainWindow):
             if self.validate_admin(password):
                 print("✅ ADMIN logged in successfully")
                 # Here we will move to Job Management / Dashboard later
+                self.adm_window = AdminWindow(user_name="admin", is_admin=True)
+                self.adm_window.show()
+                self.close()  # close InitWindow
             else:
                 QMessageBox.warning(self, "Invalid Password", "Incorrect admin password.")
 
